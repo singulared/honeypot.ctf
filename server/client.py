@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import datetime
 import socket
 import time
@@ -19,4 +18,5 @@ def client(ip, port, message):
         sock.close()
 
 data = input('>')
-client('localhost', 5528, data)
+#client('localhost', 5528, data)
+print('run {}'.format(data))
