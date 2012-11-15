@@ -23,9 +23,11 @@ class FlagServericeHandler(socketserver.BaseRequestHandler):
             self.request.close()
             return
         if random.randint(0, 1):
+            print('{}: {} is Correnct!'.format(cid, flag))
             self.request.send(b'Correct flag!\n')
         else:
             self.request.send(b'Old flag! :(\n')
+            print('{}: {} is Old!'.format(cid, flag))
         self.request.close()
 
 
@@ -35,7 +37,7 @@ class FlagService(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 if __name__ == '__main__':
     print('listen on {}'.format(2323))
-    server = FlagService(('localhost', 2323), FlagServericeHandler)
+    server = FlagService(('0.0.0.0', 2323), FlagServericeHandler)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
