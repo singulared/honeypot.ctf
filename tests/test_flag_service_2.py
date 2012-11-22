@@ -21,6 +21,17 @@ class FlagServericeHandler(socketserver.BaseRequestHandler):
             flag = self.request.recv(1024).decode().strip()
             if not flag:
                 break
+
+            # Connection close check
+            #self.request.close()
+            #return
+
+            # Timeout error check
+            #import time
+            #print('sleep:', end='')
+            #time.sleep(70)
+            #print(' [OK]')
+
             if len(flag) < 4:
                 self.request.send(b'Not a flag\n')
                 continue
