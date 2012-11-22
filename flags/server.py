@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import config
-import os
 import signal
 import socket
 import socketserver
@@ -12,7 +11,7 @@ import time
 import threading
 
 
-line_seps = [b'\n', b'\r\n', b'\r']
+line_seps = (b'\r\n', b'\n\r', b'\n', b'\r')
 server = None
 
 
@@ -25,23 +24,32 @@ class FlagServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 class FlagRequestHandler(socketserver.BaseRequestHandler):
-    client_linesep = os.linesep
+    client_linesep = None
 
     def handle(self):
         print('connect from: {}'.format(self.client_address))
-        buf = None
         data = b''
-        while buf not in line_seps:
+        while True:
             buf = self.request.recv(4096)
+            if not buf or buf == self.client_linesep:
+                break
             data += buf
-        else:
-            self.client_linesep = buf.decode()
+            if buf.endswith(line_seps):
+                self.client_linesep = self.get_client_linesep(buf)
+                if buf.strip(self.client_linesep).endswith(self.client_linesep):
+                    break
         tasks = self.parse_flags(data)
         self.server.queue += tasks
         print('Append:', [t['flag'] for t in tasks])
 
+    def get_client_linesep(self, buf):
+        for sep in line_seps:
+            if buf.endswith(sep):
+                return sep
+        return None
+
     def parse_flags(self, data):
-        return [{'flag': flag, 'ip': self.client_address} for flag in data.decode().split(self.client_linesep) if flag]
+        return [{'flag': flag, 'ip': self.client_address} for flag in data.decode().split(self.client_linesep.decode()) if flag]
 
 
 class Checker:

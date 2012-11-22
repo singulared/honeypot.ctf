@@ -5,7 +5,7 @@ import telnetlib
 
 # Server host:port
 # Port 0 means to select an arbitrary unused port
-server = ('localhost', 5528)
+server = ('0.0.0.0', 5528)
 
 # Organizator flagservice host and port
 flag_service = ('localhost', 2324)
