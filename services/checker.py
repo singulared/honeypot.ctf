@@ -2,24 +2,35 @@
 # -*- coding: utf-8 -*-
 
 import config
+import itertools
+import logging
 import queue
 
 
 class Checker:
     def __init__(self, services):
+        self.logger = logging.getLoger('honeypot.services.Checker')
+        self.logger.info('Init Checker')
         self.services = services
         self.queue = queue.Queue()
 
-    def init_queue(self):
-        ips = {}
-        #for service in config.services.keys()
-        for octet, ip in enumerate(config.ip):
-            if type(ip) in (range, tuple):
-                pass
-            #print(octet, ip)
-            ips[octet] = str(ip)
-        print('{}.{}.{}.{}'.format(**ips.values()))
+    def get_task_generator(self):
+        for service, ports in config.services.items():
+            print(service, ports)
+            ips = itertools.product(*config.ip + [ports])
+            for ip in ips:
+                yield {'srv': service, 'ip': ('{}.{}.{}.{}'.format(*ip[:4]), ip[4])}
+
+    def fill_queue(self):
+        self.logger.info('Start fill queue')
+        task_generator = self.get_task_generator()
+        for task in task_generator:
+            self.queue.put(task)
+        self.logger.info('End fill queue')
+
 
 services = []
 c = Checker(services)
-c.init_queue()
+tasks = c.get_tasks()
+for task in tasks:
+    print(task)
