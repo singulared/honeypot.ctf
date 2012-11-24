@@ -20,7 +20,6 @@ class Checker:
 
     def get_task_generator(self):
         for service, ports in config.services.items():
-            print(service, ports)
             ips = itertools.product(*config.ip + [ports])
             for ip in ips:
                 yield {'srv': service, 'ip': ('{}.{}.{}.{}'.format(*ip[:4]), ip[4])}
