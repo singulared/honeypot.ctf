@@ -19,10 +19,10 @@ class ServiceRequestHandler(socketserver.StreamRequestHandler):
         service = self.rfile.readline().decode().strip()
         self.server.logger.info('Request {}'.format(service))
         if service:
-            self.wfile.write('\n'.join(self.get_running(service) + ['']).encode())
+            self.wfile.write('\n'.join(['{}:{}'.format(ip, port) for ip, port in self.get_running(service)] + ['']).encode())
 
     def get_running(self, service):
         try:
             return self.server.services[service]
         except KeyError:
-            return None
+            return []
