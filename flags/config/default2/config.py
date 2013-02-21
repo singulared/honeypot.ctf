@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import telnetlib
+import flagstatus
 
 
 # Server host:port
@@ -16,19 +17,23 @@ timeout = 10
 
 
 # Flag checking function
-# must return true or false state for flag
+# Return status:
+#   1  - Correct flag
+#   0  - Old flag
+#   2  - Not a flag
+#   -1 - Server is down or another error
 def check(flag, tn):
     tn.read_until(b'flag: ', timeout)
     tn.write(flag.encode() + b'\n\n')
     state = tn.read_until(b'\n', timeout).decode().strip()
     if state == 'Correct flag!':
-        status = 1
+        status = flagstatus.correct
     elif state == 'Old flag! :(':
-        status = 0
+        status = flagstatus.old
     elif state == 'Not a flag:':
-        status = 2
+        status = flagstatus.not_flag
     else:
-        status = -1
+        status = flagstatus.error
     return(status)
 
 
@@ -37,5 +42,3 @@ def connect():
     tn.read_until(b'command: ', timeout)
     tn.write(cid.encode() + b'\n')
     return tn
-
-#print(check('1234'))

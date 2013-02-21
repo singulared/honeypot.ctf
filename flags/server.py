@@ -12,7 +12,6 @@ import time
 import threading
 
 
-line_seps = (b'\r\n', b'\n\r', b'\n', b'\r')
 server = None
 
 
@@ -24,49 +23,16 @@ class FlagServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         self.logger = logging.getLogger('honeypot.services.FlagServer')
         self.logger.info('Listen on {host}:{port}'.format(host=host[0], port=host[1]))
 
-    def set_config(self, cfg):
-        self.cfg = cfg
-
-    def set_queue(self, queue):
-        self.queue = queue
-
 
 class FlagRequestHandlerStream(socketserver.StreamRequestHandler):
     def handle(self):
         self.server.logger.info('Connect from: {}'.format(self.client_address))
-        flags = self.rfile.readlines()
-        self.server.logger.info('Request {}'.format(service))
-        if service:
-            self.wfile.write('\n'.join(['{}:{}'.format(ip, port) for ip, port in self.get_running(service)] + ['']).encode())
-
-
-class FlagRequestHandler(socketserver.BaseRequestHandler):
-    client_linesep = None
-
-    def handle(self):
-        print('connect from: {}'.format(self.client_address))
-        data = b''
-        while True:
-            buf = self.request.recv(4096)
-            if not buf or buf == self.client_linesep:
-                break
-            data += buf
-            if buf.endswith(line_seps):
-                self.client_linesep = self.get_client_linesep(buf)
-                if buf.strip(self.client_linesep).endswith(self.client_linesep):
-                    break
-        tasks = self.parse_flags(data)
+        tasks = []
+        flag = self.rfile.readline().strip()
+        while flag:
+            tasks.append({'flag': flag.decode(), 'ip': self.client_address})
+            flag = self.rfile.readline().strip()
         self.server.queue += tasks
-        print('Append:', [t['flag'] for t in tasks])
-
-    def get_client_linesep(self, buf):
-        for sep in line_seps:
-            if buf.endswith(sep):
-                return sep
-        return None
-
-    def parse_flags(self, data):
-        return [{'flag': flag, 'ip': self.client_address} for flag in data.decode().split(self.client_linesep.decode()) if flag]
 
 
 class Checker:
@@ -151,9 +117,7 @@ if __name__ == "__main__":
     cfg = config.load()
     init_db(cfg)
 
-    server = FlagServer(cfg.server, FlagRequestHandler)
-    server.set_config(cfg)
-    server.set_queue(queue)
+    server = FlagServer(cfg.server, FlagRequestHandlerStream, cfg, queue)
     ip, port = server.server_address
     print('Started on {}:{}'.format(ip, port))
 
