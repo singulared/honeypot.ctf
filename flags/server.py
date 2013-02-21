@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import config
+import logging
 import signal
 import socket
 import socketserver
@@ -16,11 +17,27 @@ server = None
 
 
 class FlagServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    def __init__(self, host, handler, config=None, queue=None):
+        super(FlagServer, self).__init__(host, handler)
+        self.cfg = cfg
+        self.queue = queue
+        self.logger = logging.getLogger('honeypot.services.FlagServer')
+        self.logger.info('Listen on {host}:{port}'.format(host=host[0], port=host[1]))
+
     def set_config(self, cfg):
         self.cfg = cfg
 
     def set_queue(self, queue):
         self.queue = queue
+
+
+class FlagRequestHandlerStream(socketserver.StreamRequestHandler):
+    def handle(self):
+        self.server.logger.info('Connect from: {}'.format(self.client_address))
+        flags = self.rfile.readlines()
+        self.server.logger.info('Request {}'.format(service))
+        if service:
+            self.wfile.write('\n'.join(['{}:{}'.format(ip, port) for ip, port in self.get_running(service)] + ['']).encode())
 
 
 class FlagRequestHandler(socketserver.BaseRequestHandler):
@@ -82,7 +99,8 @@ class Checker:
         conn = sqlite3.connect(self.cfg.db)
         db = conn.cursor()
         db.execute('select * from flags where flag = ?', (task['flag'],))
-        if not db.fetchone():
+        flag = db.fetchone()
+        if not flag:
             try:
                 status = self.cfg.check(task['flag'], self.connect)
             except EOFError:
@@ -90,7 +108,9 @@ class Checker:
             print(task, status)
             db.execute('insert into flags values (?, ?, ?, ?, ?)', (
                 task['flag'], task['ip'][0], int(time.time()), int(time.time()), status))
-        conn.commit()
+            conn.commit()
+        else:
+            status = flag[4]
         return status
 
 

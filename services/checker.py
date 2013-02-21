@@ -18,7 +18,7 @@ class Checker:
         self.services = services
         self.queue = queue.Queue()
 
-    def get_task_generator(self):
+    def task_generator(self):
         for service, ports in config.services.items():
             ips = itertools.product(*config.ip + [ports])
             for ip in ips:
@@ -26,8 +26,8 @@ class Checker:
 
     def fill_queue(self):
         self.logger.info('Start fill queue')
-        task_generator = self.get_task_generator()
-        for task in task_generator:
+        tasks = self.task_generator()
+        for task in tasks:
             self.queue.put(task)
         self.logger.info('End fill queue')
 
