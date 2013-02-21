@@ -23,7 +23,7 @@ class FlagServericeHandler(socketserver.BaseRequestHandler):
             self.request.close()
             return
         if random.randint(0, 1):
-            print('{}: {} is Correnct!'.format(cid, flag))
+            print('{}: {} is Correct!'.format(cid, flag))
             self.request.send(b'Correct flag!\n')
         else:
             self.request.send(b'Old flag! :(\n')
